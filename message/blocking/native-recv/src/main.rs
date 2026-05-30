@@ -1,4 +1,4 @@
-use embedded_can::{Frame, blocking::Can};
+use embedded_can::{Frame, blocking::Can, Id};
 use socketcan::{CanSocket, Socket};
 
 fn main() -> Result<(), socketcan::Error> {
@@ -15,12 +15,12 @@ where
         let frame = can.receive()?;
 
         match frame.id() {
-            socketcan::Id::Standard(standard_id) => println!(
+            Id::Standard(standard_id) => println!(
                 "standard id: {:}, data: {:x?}",
                 standard_id.as_raw(),
                 frame.data()
             ),
-            socketcan::Id::Extended(extended_id) => println!(
+            Id::Extended(extended_id) => println!(
                 "extended id: {:}, data: {:x?}",
                 extended_id.as_raw(),
                 frame.data()

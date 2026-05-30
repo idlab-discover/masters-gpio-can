@@ -1,4 +1,8 @@
 [workspace]
 resolver = "3"
-members = ["*"]
-exclude = ["target"]
+members = [
+    "native-recv",
+    "native-send",
+    "wasm-recv",
+    "wasm-send",
+]

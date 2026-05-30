@@ -1,0 +1,30 @@
+package wasi:can;
+
+/// Non-blocking CAN API based on `embedded_can::nb::Can`.
+interface nonblocking {
+    use types.{error-code, frame};
+
+    /// Non-blocking CAN error.
+    ///
+    /// This mirrors `nb::Error<Self::Error>`.
+    variant error {
+        /// The operation would block.
+        would-block,
+
+        /// A CAN operation error occurred.
+        other(error-code),
+    }
+
+    /// A CAN interface that is able to transmit and receive frames.
+    resource can {
+        /// Puts a frame in the transmit buffer to be sent on the bus.
+        ///
+        /// Returns `some(frame)` if a pending lower-priority frame was
+        /// replaced, `none` if no frame was replaced, or `would-block` if the
+        /// transmit buffer is full and no frame can be replaced.
+        transmit: func(frame: borrow<frame>) -> result<option<frame>, error>;
+
+        /// Returns a received frame if available.
+        receive: func() -> result<frame, error>;
+    }
+}

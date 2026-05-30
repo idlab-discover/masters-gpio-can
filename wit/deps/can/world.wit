@@ -1,0 +1,7 @@
+package wasi:can;
+
+world imports {
+    import types;
+    import blocking;
+    import nonblocking;
+}

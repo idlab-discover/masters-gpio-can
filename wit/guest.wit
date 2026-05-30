@@ -1,0 +1,19 @@
+package examples:can;
+
+world guest-blocking {
+    import wasi:can/types;
+    import wasi:can/blocking;
+
+    use wasi:can/blocking.{can};
+
+    export run: func(connection: can);
+}
+
+world guest-nonblocking {
+    import wasi:can/types;
+    import wasi:can/nonblocking;
+
+    use wasi:can/nonblocking.{can};
+
+    export run: func(connection: can);
+}
