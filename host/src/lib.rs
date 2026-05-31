@@ -74,7 +74,7 @@ pub fn execute(component: PathBuf) -> Result<(), anyhow::Error> {
     can::Imports::add_to_linker::<_, HasSelf<_>>(&mut linker, |state: &mut HostState| {
         &mut state.host
     })?;
-    
+
     let mut store = Store::new(
         &engine,
         HostState {
@@ -86,7 +86,11 @@ pub fn execute(component: PathBuf) -> Result<(), anyhow::Error> {
     );
 
     let socket = socketcan::CanSocket::open("can0")?;
-    let connection = store.data_mut().host.table.push(crate::blocking::Can(socket))?;
+    let connection = store
+        .data_mut()
+        .host
+        .table
+        .push(crate::blocking::Can(socket))?;
 
     let guest = blocking_guest::GuestBlocking::instantiate(&mut store, &component, &linker)?;
 

@@ -2,24 +2,20 @@ use socketcan::CanFrame;
 
 use crate::HostComponent;
 
-pub struct Frame(pub CanFrame);
-
 use crate::can::wasi::can::types::Id;
+
+pub struct Frame(pub CanFrame);
 
 impl crate::can::wasi::can::types::Host for HostComponent {}
 impl crate::can::wasi::can::types::HostFrame for HostComponent {
     fn new(
         &mut self,
         id: Id,
-        data: wasmtime::component::__internal::Vec<u8>,
+        data: Vec<u8>,
     ) -> wasmtime::Result<Option<wasmtime::component::Resource<Frame>>> {
         let Some(embedded_id) = (match id {
-            Id::Standard(raw) => {
-                embedded_can::StandardId::new(raw).map(embedded_can::Id::Standard)
-            }
-            Id::Extended(raw) => {
-                embedded_can::ExtendedId::new(raw).map(embedded_can::Id::Extended)
-            }
+            Id::Standard(raw) => embedded_can::StandardId::new(raw).map(embedded_can::Id::Standard),
+            Id::Extended(raw) => embedded_can::ExtendedId::new(raw).map(embedded_can::Id::Extended),
         }) else {
             return Ok(None);
         };
@@ -38,12 +34,8 @@ impl crate::can::wasi::can::types::HostFrame for HostComponent {
         dlc: u64,
     ) -> wasmtime::Result<Option<wasmtime::component::Resource<Frame>>> {
         let Some(embedded_id) = (match id {
-            Id::Standard(raw) => {
-                embedded_can::StandardId::new(raw).map(embedded_can::Id::Standard)
-            }
-            Id::Extended(raw) => {
-                embedded_can::ExtendedId::new(raw).map(embedded_can::Id::Extended)
-            }
+            Id::Standard(raw) => embedded_can::StandardId::new(raw).map(embedded_can::Id::Standard),
+            Id::Extended(raw) => embedded_can::ExtendedId::new(raw).map(embedded_can::Id::Extended),
         }) else {
             return Ok(None);
         };
@@ -111,10 +103,7 @@ impl crate::can::wasi::can::types::HostFrame for HostComponent {
         Ok(embedded_can::Frame::dlc(&self_.0) as u64)
     }
 
-    fn data(
-        &mut self,  
-        self_: wasmtime::component::Resource<Frame>,
-    ) -> wasmtime::Result<wasmtime::component::__internal::Vec<u8>> {
+    fn data(&mut self, self_: wasmtime::component::Resource<Frame>) -> wasmtime::Result<Vec<u8>> {
         let self_ = self.table.get(&self_)?;
 
         Ok(embedded_can::Frame::data(&self_.0).to_vec())

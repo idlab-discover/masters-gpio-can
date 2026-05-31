@@ -871,6 +871,7 @@ dependencies = [
  "anyhow",
  "clap",
  "embedded-can",
+ "nb",
  "socketcan",
  "wasmtime",
  "wasmtime-wasi",
