@@ -3,12 +3,12 @@ use socketcan::CanSocket;
 use crate::HostComponent;
 use crate::types::Frame;
 
-use crate::can::wasi::can::types::ErrorCode;
+use crate::wasi::can::types::ErrorCode;
 
 pub struct Can(pub CanSocket);
 
-impl crate::can::wasi::can::blocking::Host for HostComponent {}
-impl crate::can::wasi::can::blocking::HostCan for HostComponent {
+impl crate::wasi::can::blocking::Host for HostComponent {}
+impl crate::wasi::can::blocking::HostCan for HostComponent {
     fn transmit(
         &mut self,
         self_: wasmtime::component::Resource<Can>,

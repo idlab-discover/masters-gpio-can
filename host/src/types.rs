@@ -2,12 +2,12 @@ use socketcan::CanFrame;
 
 use crate::HostComponent;
 
-use crate::can::wasi::can::types::Id;
+use crate::wasi::can::types::Id;
 
 pub struct Frame(pub CanFrame);
 
-impl crate::can::wasi::can::types::Host for HostComponent {}
-impl crate::can::wasi::can::types::HostFrame for HostComponent {
+impl crate::wasi::can::types::Host for HostComponent {}
+impl crate::wasi::can::types::HostFrame for HostComponent {
     fn new(
         &mut self,
         id: Id,
