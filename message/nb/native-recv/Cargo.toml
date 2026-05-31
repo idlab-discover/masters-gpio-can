@@ -1,5 +1,5 @@
 [package]
-name = "native-recv"
+name = "nb-native-recv"
 version = "0.1.0"
 edition = "2024"
 

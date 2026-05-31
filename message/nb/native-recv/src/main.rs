@@ -1,4 +1,4 @@
-use embedded_can::{Frame, nb::Can};
+use embedded_can::{Frame, Id, nb::Can};
 use socketcan::{CanSocket, Socket};
 use std::time::Duration;
 
@@ -17,20 +17,20 @@ where
         let frame = match can.receive() {
             Ok(frame) => frame,
             Err(nb::Error::WouldBlock) => {
-                std::thread::sleep(Duration::from_secs(1));
+                std::thread::sleep(Duration::from_secs(3));
                 continue;
             }
             Err(nb::Error::Other(err)) => return Err(err),
         };
 
         match frame.id() {
-            socketcan::Id::Standard(standard_id) => println!(
-                "standard id={:}, data={:x?}",
+            Id::Standard(standard_id) => println!(
+                "standard_id={}, data={:x?}",
                 standard_id.as_raw(),
                 frame.data()
             ),
-            socketcan::Id::Extended(extended_id) => println!(
-                "extended id={:}, data={:x?}",
+            Id::Extended(extended_id) => println!(
+                "extended_id={}, data={:x?}",
                 extended_id.as_raw(),
                 frame.data()
             ),

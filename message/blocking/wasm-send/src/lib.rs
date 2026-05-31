@@ -10,7 +10,13 @@ struct Component;
 
 impl Guest for Component {
     fn run(connection: Can) {
-        let frame = Frame::new(Id::Standard(1), &[0x13, 0x37]).unwrap();
+        let standard_id = Id::Standard(1);
+        let frame = Frame::new(
+            standard_id,
+            &[0x13, 0x37, 0xc0, 0xd3, 0x12, 0x34, 0x56, 0x78],
+        )
+        .unwrap();
+
         connection.transmit(&frame).unwrap();
     }
 }

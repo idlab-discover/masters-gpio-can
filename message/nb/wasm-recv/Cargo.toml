@@ -1,5 +1,5 @@
 [package]
-name = "blocking-wasm-recv"
+name = "nb-wasm-recv"
 version = "0.1.0"
 edition = "2024"
 

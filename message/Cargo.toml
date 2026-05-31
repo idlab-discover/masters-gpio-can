@@ -1,0 +1,12 @@
+[workspace]
+resolver = "3"
+members = [
+    "blocking/native-recv",
+    "blocking/native-send",
+    "blocking/wasm-recv",
+    "blocking/wasm-send",
+    "nb/native-recv",
+    "nb/native-send",
+    "nb/wasm-recv",
+    "nb/wasm-send",
+]
