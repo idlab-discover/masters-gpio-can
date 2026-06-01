@@ -2,7 +2,7 @@ use socketcan::CanFrame;
 
 use crate::HostComponent;
 
-use crate::wasi::can::types::Id;
+use crate::wasi::can::types::{ErrorCode, Id};
 
 pub struct Frame(pub CanFrame);
 
@@ -112,5 +112,18 @@ impl crate::wasi::can::types::HostFrame for HostComponent {
     fn drop(&mut self, self_: wasmtime::component::Resource<Frame>) -> wasmtime::Result<()> {
         self.table.delete(self_)?;
         Ok(())
+    }
+}
+
+pub fn map_hal_error<E: embedded_can::Error>(err: E) -> ErrorCode {
+    match err.kind() {
+        embedded_can::ErrorKind::Overrun => ErrorCode::Overrun,
+        embedded_can::ErrorKind::Bit => ErrorCode::Bit,
+        embedded_can::ErrorKind::Stuff => ErrorCode::Stuff,
+        embedded_can::ErrorKind::Crc => ErrorCode::Crc,
+        embedded_can::ErrorKind::Form => ErrorCode::Form,
+        embedded_can::ErrorKind::Acknowledge => ErrorCode::Acknowledge,
+        embedded_can::ErrorKind::Other => ErrorCode::Other,
+        _ => ErrorCode::Other,
     }
 }

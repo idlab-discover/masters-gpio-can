@@ -2,9 +2,9 @@ use socketcan::CanSocket;
 
 use crate::HostComponent;
 use crate::types::Frame;
+use crate::types::map_hal_error;
 
 use crate::wasi::can::nonblocking::Error;
-use crate::wasi::can::types::ErrorCode;
 
 pub struct Can(pub CanSocket);
 
@@ -22,20 +22,7 @@ impl crate::wasi::can::nonblocking::HostCan for HostComponent {
             Ok(Some(replaced_frame)) => Ok(Ok(Some(self.table.push(Frame(replaced_frame))?))),
             Ok(None) => Ok(Ok(None)),
             Err(nb::Error::WouldBlock) => Ok(Err(Error::WouldBlock)),
-            Err(nb::Error::Other(error)) => {
-                let error = match embedded_can::Error::kind(&error) {
-                    embedded_can::ErrorKind::Overrun => ErrorCode::Overrun,
-                    embedded_can::ErrorKind::Bit => ErrorCode::Bit,
-                    embedded_can::ErrorKind::Stuff => ErrorCode::Stuff,
-                    embedded_can::ErrorKind::Crc => ErrorCode::Crc,
-                    embedded_can::ErrorKind::Form => ErrorCode::Form,
-                    embedded_can::ErrorKind::Acknowledge => ErrorCode::Acknowledge,
-                    embedded_can::ErrorKind::Other => ErrorCode::Other,
-                    _ => ErrorCode::Other,
-                };
-
-                Ok(Err(Error::Other(error)))
-            }
+            Err(nb::Error::Other(err)) => Ok(Err(Error::Other(map_hal_error(err)))),
         }
     }
 
@@ -48,20 +35,7 @@ impl crate::wasi::can::nonblocking::HostCan for HostComponent {
         match embedded_can::nb::Can::receive(&mut self_.0) {
             Ok(frame) => Ok(Ok(self.table.push(Frame(frame))?)),
             Err(nb::Error::WouldBlock) => Ok(Err(Error::WouldBlock)),
-            Err(nb::Error::Other(error)) => {
-                let error = match embedded_can::Error::kind(&error) {
-                    embedded_can::ErrorKind::Overrun => ErrorCode::Overrun,
-                    embedded_can::ErrorKind::Bit => ErrorCode::Bit,
-                    embedded_can::ErrorKind::Stuff => ErrorCode::Stuff,
-                    embedded_can::ErrorKind::Crc => ErrorCode::Crc,
-                    embedded_can::ErrorKind::Form => ErrorCode::Form,
-                    embedded_can::ErrorKind::Acknowledge => ErrorCode::Acknowledge,
-                    embedded_can::ErrorKind::Other => ErrorCode::Other,
-                    _ => ErrorCode::Other,
-                };
-
-                Ok(Err(Error::Other(error)))
-            }
+            Err(nb::Error::Other(err)) => Ok(Err(Error::Other(map_hal_error(err)))),
         }
     }
 

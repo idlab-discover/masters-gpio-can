@@ -2,6 +2,7 @@ use socketcan::CanSocket;
 
 use crate::HostComponent;
 use crate::types::Frame;
+use crate::types::map_hal_error;
 
 use crate::wasi::can::types::ErrorCode;
 
@@ -19,20 +20,7 @@ impl crate::wasi::can::blocking::HostCan for HostComponent {
 
         match embedded_can::blocking::Can::transmit(&mut self_.0, &frame) {
             Ok(()) => Ok(Ok(())),
-            Err(error) => {
-                let error = match embedded_can::Error::kind(&error) {
-                    embedded_can::ErrorKind::Overrun => ErrorCode::Overrun,
-                    embedded_can::ErrorKind::Bit => ErrorCode::Bit,
-                    embedded_can::ErrorKind::Stuff => ErrorCode::Stuff,
-                    embedded_can::ErrorKind::Crc => ErrorCode::Crc,
-                    embedded_can::ErrorKind::Form => ErrorCode::Form,
-                    embedded_can::ErrorKind::Acknowledge => ErrorCode::Acknowledge,
-                    embedded_can::ErrorKind::Other => ErrorCode::Other,
-                    _ => ErrorCode::Other,
-                };
-
-                Ok(Err(error))
-            }
+            Err(err) => Ok(Err(map_hal_error(err))),
         }
     }
 
@@ -44,20 +32,7 @@ impl crate::wasi::can::blocking::HostCan for HostComponent {
 
         match embedded_can::blocking::Can::receive(&mut self_.0) {
             Ok(frame) => Ok(Ok(self.table.push(Frame(frame))?)),
-            Err(error) => {
-                let error = match embedded_can::Error::kind(&error) {
-                    embedded_can::ErrorKind::Overrun => ErrorCode::Overrun,
-                    embedded_can::ErrorKind::Bit => ErrorCode::Bit,
-                    embedded_can::ErrorKind::Stuff => ErrorCode::Stuff,
-                    embedded_can::ErrorKind::Crc => ErrorCode::Crc,
-                    embedded_can::ErrorKind::Form => ErrorCode::Form,
-                    embedded_can::ErrorKind::Acknowledge => ErrorCode::Acknowledge,
-                    embedded_can::ErrorKind::Other => ErrorCode::Other,
-                    _ => ErrorCode::Other,
-                };
-
-                Ok(Err(error))
-            }
+            Err(err) => Ok(Err(map_hal_error(err))),
         }
     }
 
