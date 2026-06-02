@@ -8,10 +8,9 @@ use crate::HostState;
 
 wasmtime::component::bindgen!({
     path: "../wit",
-    world: "guest-nonblocking",
+    world: "guest-blocking",
     with: {
-        "wasi:can/nonblocking.can": crate::nonblocking::Can,
-        "wasi:can/types.frame": crate::types::Frame,
+        "wasi:can/blocking.can": crate::blocking::Can,
     },
 });
 
@@ -21,14 +20,13 @@ pub fn run(
     mut store: Store<HostState>,
 ) -> Result<(), anyhow::Error> {
     let socket = CanSocket::open("can0")?;
-    socket.set_nonblocking(true)?;
     let connection = store
         .data_mut()
         .host
         .table
-        .push(crate::nonblocking::Can(socket))?;
+        .push(crate::blocking::Can(socket))?;
 
-    let guest = GuestNonblocking::instantiate(&mut store, &component, &linker)?;
+    let guest = GuestBlocking::instantiate(&mut store, &component, &linker)?;
 
     guest.call_run(&mut store, connection)?;
     Ok(())

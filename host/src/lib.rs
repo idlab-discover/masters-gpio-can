@@ -10,10 +10,12 @@ wasmtime::component::bindgen!({
 });
 
 mod blocking;
-mod blocking_guest;
 mod nonblocking;
-mod nonblocking_guest;
 mod types;
+mod guest {
+    pub mod blocking;
+    pub mod nonblocking;
+}
 
 use std::path::PathBuf;
 
@@ -67,7 +69,7 @@ pub fn execute(component: PathBuf, guest_type: GuestType) -> Result<(), anyhow::
     );
 
     match guest_type {
-        GuestType::Blocking => blocking_guest::run(linker, component, store),
-        GuestType::Nonblocking => nonblocking_guest::run(linker, component, store),
+        GuestType::Blocking => guest::blocking::run(linker, component, store),
+        GuestType::Nonblocking => guest::nonblocking::run(linker, component, store),
     }
 }
