@@ -1,15 +1,24 @@
-use socketcan::CanSocket;
+use socketcan::{CanSocket, Socket};
 
-use crate::HostComponent;
-use crate::types::Frame;
-use crate::types::map_hal_error;
-
-use crate::wasi::can::types::ErrorCode;
+use crate::can::WasiCanCtxView;
+use crate::can::bindings::wasi;
+use crate::can::types::Frame;
+use crate::can::types::map_hal_error;
+use wasi::can::types::ErrorCode;
 
 pub struct Can(pub CanSocket);
 
-impl crate::wasi::can::blocking::Host for HostComponent {}
-impl crate::wasi::can::blocking::HostCan for HostComponent {
+impl wasi::can::blocking::Host for WasiCanCtxView<'_> {
+    fn open(&mut self) -> wasmtime::Result<Result<wasmtime::component::Resource<Can>, ErrorCode>> {
+        let socket = match CanSocket::open("can0") {
+            Ok(socket) => socket,
+            Err(err) => return Ok(Err(ErrorCode::Other(err.to_string()))),
+        };
+
+        Ok(Ok(self.table.push(Can(socket))?))
+    }
+}
+impl wasi::can::blocking::HostCan for WasiCanCtxView<'_> {
     fn transmit(
         &mut self,
         self_: wasmtime::component::Resource<Can>,

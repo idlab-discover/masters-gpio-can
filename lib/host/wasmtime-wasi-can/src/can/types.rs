@@ -1,13 +1,13 @@
 use socketcan::CanFrame;
 
-use crate::HostComponent;
-
-use crate::wasi::can::types::{ErrorCode, Id};
+use crate::can::WasiCanCtxView;
+use crate::can::bindings::wasi;
+use wasi::can::types::{ErrorCode, Id};
 
 pub struct Frame(pub CanFrame);
 
-impl crate::wasi::can::types::Host for HostComponent {}
-impl crate::wasi::can::types::HostFrame for HostComponent {
+impl wasi::can::types::Host for WasiCanCtxView<'_> {}
+impl wasi::can::types::HostFrame for WasiCanCtxView<'_> {
     fn new(
         &mut self,
         id: Id,
@@ -123,7 +123,6 @@ pub fn map_hal_error<E: embedded_can::Error>(err: E) -> ErrorCode {
         embedded_can::ErrorKind::Crc => ErrorCode::Crc,
         embedded_can::ErrorKind::Form => ErrorCode::Form,
         embedded_can::ErrorKind::Acknowledge => ErrorCode::Acknowledge,
-        embedded_can::ErrorKind::Other => ErrorCode::Other,
-        _ => ErrorCode::Other,
+        _ => ErrorCode::Other("Hardware CAN error".to_string()),
     }
 }

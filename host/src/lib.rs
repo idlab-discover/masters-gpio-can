@@ -1,75 +1,61 @@
-wasmtime::component::bindgen!({
-    path: "../wit/deps/can",
-    world: "imports",
-    with: {
-        "wasi:can/blocking.can": crate::blocking::Can,
-        "wasi:can/nonblocking.can": crate::nonblocking::Can,
-        "wasi:can/types.frame": crate::types::Frame,
-    },
-    imports: { default: trappable },
-});
-
-mod blocking;
-mod nonblocking;
-mod types;
-mod guest {
-    pub mod blocking;
-    pub mod nonblocking;
-}
-
 use std::path::PathBuf;
 
 use wasmtime::{
     Engine, Store,
-    component::{Component, HasSelf, Linker, ResourceTable},
+    component::{Component, Linker, ResourceTable},
     error::Context,
 };
+use wasmtime_wasi::p2::bindings::sync::Command;
 use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
-
-pub struct HostComponent {
-    pub(crate) table: ResourceTable,
-}
+use wasmtime_wasi_can::{WasiCanCtx, WasiCanCtxView, WasiCanView};
 
 pub struct HostState {
-    pub(crate) host: HostComponent,
-    pub(crate) ctx: WasiCtx,
+    pub(crate) table: ResourceTable,
+    pub(crate) wasi_ctx: WasiCtx,
+    pub(crate) can_ctx: WasiCanCtx,
 }
 
 impl WasiView for HostState {
     fn ctx(&mut self) -> WasiCtxView<'_> {
         WasiCtxView {
-            table: &mut self.host.table,
-            ctx: &mut self.ctx,
+            ctx: &mut self.wasi_ctx,
+            table: &mut self.table,
         }
     }
 }
 
-#[derive(Clone, clap::ValueEnum)]
-pub enum GuestType {
-    Blocking,
-    Nonblocking,
+impl WasiCanView for HostState {
+    fn can_ctx(&mut self) -> WasiCanCtxView<'_> {
+        WasiCanCtxView {
+            ctx: &mut self.can_ctx,
+            table: &mut self.table,
+        }
+    }
 }
 
-pub fn execute(component: PathBuf, guest_type: GuestType) -> Result<(), anyhow::Error> {
+pub fn execute(component: PathBuf) -> Result<(), anyhow::Error> {
     let engine = Engine::default();
-    let component = Component::from_file(&engine, component).context("Component file not found")?;
-    let mut linker = Linker::new(&engine);
+
+    let state = HostState {
+        table: ResourceTable::new(),
+        wasi_ctx: WasiCtx::builder().inherit_stdio().build(),
+        can_ctx: WasiCanCtx::new(""),
+    };
+
+    let mut store = Store::new(&engine, state);
+    let mut linker: Linker<HostState> = Linker::new(&engine);
+
     wasmtime_wasi::p2::add_to_linker_sync(&mut linker)?;
+    wasmtime_wasi_can::add_to_linker(&mut linker)?;
 
-    Imports::add_to_linker::<_, HasSelf<_>>(&mut linker, |state: &mut HostState| &mut state.host)?;
+    let component = Component::from_file(&engine, component).context("Component file not found")?;
 
-    let store = Store::new(
-        &engine,
-        HostState {
-            host: HostComponent {
-                table: ResourceTable::new(),
-            },
-            ctx: WasiCtx::builder().inherit_stdio().build(),
-        },
-    );
+    let command = Command::instantiate(&mut store, &component, &linker)?;
+    command
+        .wasi_cli_run()
+        .call_run(&mut store)
+        .context("Failed to run component")?
+        .map_err(|()| anyhow::anyhow!("Component exited with an error"))?;
 
-    match guest_type {
-        GuestType::Blocking => guest::blocking::run(linker, component, store),
-        GuestType::Nonblocking => guest::nonblocking::run(linker, component, store),
-    }
+    Ok(())
 }

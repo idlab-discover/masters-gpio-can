@@ -27,4 +27,6 @@ interface nonblocking {
         /// Returns a received frame if available.
         receive: func() -> result<frame, error>;
     }
+
+    open: func() -> result<can, error-code>;
 }

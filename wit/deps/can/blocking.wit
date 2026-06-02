@@ -14,4 +14,6 @@ interface blocking {
         /// Blocks until a frame was received.
         receive: func() -> result<frame, error-code>;
     }
+
+    open: func() -> result<can, error-code>;
 }

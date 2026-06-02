@@ -9,10 +9,10 @@ artifacts=(
   target/aarch64-unknown-linux-gnu/release/blocking-native-send
   target/aarch64-unknown-linux-gnu/release/nb-native-recv
   target/aarch64-unknown-linux-gnu/release/nb-native-send
-  target/wasm32-wasip2/release/blocking_wasm_recv.wasm
-  target/wasm32-wasip2/release/blocking_wasm_send.wasm
-  target/wasm32-wasip2/release/nb_wasm_recv.wasm
-  target/wasm32-wasip2/release/nb_wasm_send.wasm
+  target/wasm32-wasip2/release/blocking-wasm-recv.wasm
+  target/wasm32-wasip2/release/blocking-wasm-send.wasm
+  target/wasm32-wasip2/release/nb-wasm-recv.wasm
+  target/wasm32-wasip2/release/nb-wasm-send.wasm
 )
 
 pids=()

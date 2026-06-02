@@ -20,7 +20,7 @@ interface types {
     /// CAN error kind.
     ///
     /// This mirrors `embedded_can::ErrorKind`.
-    enum error-code {
+    variant error-code {
         /// The peripheral receive buffer was overrun.
         overrun,
 
@@ -41,7 +41,7 @@ interface types {
         acknowledge,
 
         /// A different error occurred.
-        other,
+        other(string),
     }
 
     /// A CAN frame.
