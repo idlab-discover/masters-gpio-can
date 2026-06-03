@@ -13,7 +13,7 @@ fn main() {
 }
 
 fn run() -> Result<(), ErrorCode> {
-    let can = wasi::can::nonblocking::open()?;
+    let can = wasi::can::nonblocking::open("can")?;
     loop {
         let frame = match can.receive() {
             Ok(frame) => frame,

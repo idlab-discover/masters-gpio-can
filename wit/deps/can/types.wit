@@ -48,18 +48,6 @@ interface types {
     ///
     /// This mirrors `embedded_can::Frame`.
     resource frame {
-        /// Creates a new data frame.
-        ///
-        /// This returns `none` if the data slice is too long for the concrete
-        /// frame implementation.
-        new: static func(id: id, data: list<u8>) -> option<frame>;
-
-        /// Creates a new remote frame with the RTR bit set.
-        ///
-        /// This returns `none` if the data length code is not valid for the
-        /// concrete frame implementation.
-        new-remote: static func(id: id, dlc: u64) -> option<frame>;
-
         /// Returns true if this is an extended frame.
         is-extended: func() -> bool;
 

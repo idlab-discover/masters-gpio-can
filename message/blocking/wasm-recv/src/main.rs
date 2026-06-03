@@ -12,7 +12,7 @@ fn main() {
 }
 
 fn run() -> Result<(), ErrorCode> {
-    let can = wasi::can::blocking::open()?;
+    let can = wasi::can::blocking::open("can")?;
     loop {
         let frame = can.receive()?;
 

@@ -1,64 +1,65 @@
-use socketcan::CanFrame;
-
-use crate::can::WasiCanCtxView;
 use crate::can::bindings::wasi;
+use crate::can::{ErrorDetailPolicy, WasiCanCtxView};
 use wasi::can::types::{ErrorCode, Id};
 
-pub struct Frame(pub CanFrame);
+use embedded_can::{
+    ExtendedId as HalExtendedId, Frame as HalFrame, Id as HalId, StandardId as HalStandardId,
+};
+
+#[derive(Clone)]
+pub struct Frame {
+    id: HalId,
+    data: Vec<u8>,
+    dlc: usize,
+    is_standard: bool,
+    is_data_frame: bool,
+}
+
+impl Frame {
+    pub fn from_hal<T: HalFrame>(frame: &T) -> Self {
+        Self {
+            id: frame.id(),
+            data: frame.data().to_vec(),
+            dlc: frame.dlc(),
+            is_standard: frame.is_standard(),
+            is_data_frame: frame.is_data_frame(),
+        }
+    }
+
+    pub fn to_hal<T: HalFrame>(&self) -> Option<T> {
+        if self.is_data_frame {
+            T::new(self.id, &self.data)
+        } else {
+            T::new_remote(self.id, self.dlc as usize)
+        }
+    }
+}
+
+impl Id {
+    pub fn from_hal_id(id: &HalId) -> Self {
+        match id {
+            HalId::Standard(embedded_id) => Id::Standard(embedded_id.as_raw()),
+            HalId::Extended(embedded_id) => Id::Extended(embedded_id.as_raw()),
+        }
+    }
+
+    pub fn to_hal_id(&self) -> Option<HalId> {
+        match self {
+            Id::Standard(embedded_id) => Some(HalId::Standard(HalStandardId::new(*embedded_id)?)),
+            Id::Extended(embedded_id) => Some(HalId::Extended(HalExtendedId::new(*embedded_id)?)),
+        }
+    }
+}
 
 impl wasi::can::types::Host for WasiCanCtxView<'_> {}
 impl wasi::can::types::HostFrame for WasiCanCtxView<'_> {
-    fn new(
-        &mut self,
-        id: Id,
-        data: Vec<u8>,
-    ) -> wasmtime::Result<Option<wasmtime::component::Resource<Frame>>> {
-        let Some(embedded_id) = (match id {
-            Id::Standard(raw) => embedded_can::StandardId::new(raw).map(embedded_can::Id::Standard),
-            Id::Extended(raw) => embedded_can::ExtendedId::new(raw).map(embedded_can::Id::Extended),
-        }) else {
-            return Ok(None);
-        };
-
-        let Some(frame) = embedded_can::Frame::new(embedded_id, &data) else {
-            return Ok(None);
-        };
-
-        let resource = self.table.push(Frame(frame))?;
-        Ok(Some(resource))
-    }
-
-    fn new_remote(
-        &mut self,
-        id: Id,
-        dlc: u64,
-    ) -> wasmtime::Result<Option<wasmtime::component::Resource<Frame>>> {
-        let Some(embedded_id) = (match id {
-            Id::Standard(raw) => embedded_can::StandardId::new(raw).map(embedded_can::Id::Standard),
-            Id::Extended(raw) => embedded_can::ExtendedId::new(raw).map(embedded_can::Id::Extended),
-        }) else {
-            return Ok(None);
-        };
-
-        let Ok(dlc) = usize::try_from(dlc) else {
-            return Ok(None);
-        };
-
-        let Some(frame) = embedded_can::Frame::new_remote(embedded_id, dlc) else {
-            return Ok(None);
-        };
-
-        let resource = self.table.push(Frame(frame))?;
-        Ok(Some(resource))
-    }
-
     fn is_extended(
         &mut self,
         self_: wasmtime::component::Resource<Frame>,
     ) -> wasmtime::Result<bool> {
         let self_ = self.table.get(&self_)?;
 
-        Ok(embedded_can::Frame::is_extended(&self_.0))
+        Ok(!self_.is_standard)
     }
 
     fn is_standard(
@@ -67,7 +68,7 @@ impl wasi::can::types::HostFrame for WasiCanCtxView<'_> {
     ) -> wasmtime::Result<bool> {
         let self_ = self.table.get(&self_)?;
 
-        Ok(embedded_can::Frame::is_standard(&self_.0))
+        Ok(self_.is_standard)
     }
 
     fn is_remote_frame(
@@ -76,7 +77,7 @@ impl wasi::can::types::HostFrame for WasiCanCtxView<'_> {
     ) -> wasmtime::Result<bool> {
         let self_ = self.table.get(&self_)?;
 
-        Ok(embedded_can::Frame::is_remote_frame(&self_.0))
+        Ok(!self_.is_data_frame)
     }
 
     fn is_data_frame(
@@ -85,28 +86,25 @@ impl wasi::can::types::HostFrame for WasiCanCtxView<'_> {
     ) -> wasmtime::Result<bool> {
         let self_ = self.table.get(&self_)?;
 
-        Ok(embedded_can::Frame::is_data_frame(&self_.0))
+        Ok(self_.is_data_frame)
     }
 
     fn id(&mut self, self_: wasmtime::component::Resource<Frame>) -> wasmtime::Result<Id> {
         let self_ = self.table.get(&self_)?;
 
-        match embedded_can::Frame::id(&self_.0) {
-            embedded_can::Id::Standard(embedded_id) => Ok(Id::Standard(embedded_id.as_raw())),
-            embedded_can::Id::Extended(embedded_id) => Ok(Id::Extended(embedded_id.as_raw())),
-        }
+        Ok(Id::from_hal_id(&self_.id))
     }
 
     fn dlc(&mut self, self_: wasmtime::component::Resource<Frame>) -> wasmtime::Result<u64> {
         let self_ = self.table.get(&self_)?;
 
-        Ok(embedded_can::Frame::dlc(&self_.0) as u64)
+        Ok(self_.dlc as u64)
     }
 
     fn data(&mut self, self_: wasmtime::component::Resource<Frame>) -> wasmtime::Result<Vec<u8>> {
         let self_ = self.table.get(&self_)?;
 
-        Ok(embedded_can::Frame::data(&self_.0).to_vec())
+        Ok(self_.data.clone())
     }
 
     fn drop(&mut self, self_: wasmtime::component::Resource<Frame>) -> wasmtime::Result<()> {
@@ -115,7 +113,7 @@ impl wasi::can::types::HostFrame for WasiCanCtxView<'_> {
     }
 }
 
-pub fn map_hal_error<E: embedded_can::Error>(err: E) -> ErrorCode {
+pub fn map_hal_error<E: embedded_can::Error>(err: E, policy: ErrorDetailPolicy) -> ErrorCode {
     match err.kind() {
         embedded_can::ErrorKind::Overrun => ErrorCode::Overrun,
         embedded_can::ErrorKind::Bit => ErrorCode::Bit,
@@ -123,6 +121,9 @@ pub fn map_hal_error<E: embedded_can::Error>(err: E) -> ErrorCode {
         embedded_can::ErrorKind::Crc => ErrorCode::Crc,
         embedded_can::ErrorKind::Form => ErrorCode::Form,
         embedded_can::ErrorKind::Acknowledge => ErrorCode::Acknowledge,
-        _ => ErrorCode::Other("Hardware CAN error".to_string()),
+        _ => match policy {
+            ErrorDetailPolicy::Opaque => ErrorCode::Other("Hardware CAN error".to_string()),
+            ErrorDetailPolicy::Debug => ErrorCode::Other(format!("{err:?}")),
+        },
     }
 }

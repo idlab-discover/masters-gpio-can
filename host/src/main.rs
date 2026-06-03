@@ -10,6 +10,8 @@ use wasmtime_wasi::p2::bindings::sync::Command;
 use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 use wasmtime_wasi_can::{WasiCanCtx, WasiCanCtxView, WasiCanView};
 
+use socketcan::{CanSocket, Socket};
+
 struct HostState {
     table: ResourceTable,
     wasi_ctx: WasiCtx,
@@ -55,10 +57,16 @@ fn main() -> Result<(), anyhow::Error> {
 
     let engine = Engine::default();
 
+    let blocking_socket = CanSocket::open("can0")?;
+    let nonblocking_socket = CanSocket::open("can0")?;
+    let mut can_ctx = WasiCanCtx::new();
+    can_ctx.add_blocking_can("can", blocking_socket);
+    can_ctx.add_nonblocking_can("can", nonblocking_socket);
+
     let state = HostState {
         table: ResourceTable::new(),
         wasi_ctx: WasiCtx::builder().inherit_stdio().build(),
-        can_ctx: WasiCanCtx::new(""),
+        can_ctx: can_ctx,
     };
 
     let mut store = Store::new(&engine, state);

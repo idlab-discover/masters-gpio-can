@@ -5,11 +5,43 @@ mod types;
 
 use wasmtime::component::{HasData, Linker, ResourceTable};
 
-pub struct WasiCanCtx {}
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ErrorDetailPolicy {
+    Opaque,
+    Debug,
+}
+
+pub struct WasiCanCtx {
+    pub blocking_can: Vec<(String, Box<dyn blocking::ErasedCan + Send>)>,
+    pub nonblocking_can: Vec<(String, Box<dyn nonblocking::ErasedCan + Send>)>,
+    pub error_detail_policy: ErrorDetailPolicy,
+}
 
 impl WasiCanCtx {
-    pub fn new(_name: &str) -> Self {
-        Self {}
+    pub fn new() -> Self {
+        Self {
+            blocking_can: Vec::new(),
+            nonblocking_can: Vec::new(),
+            error_detail_policy: ErrorDetailPolicy::Opaque,
+        }
+    }
+
+    pub fn set_error_detail_policy(&mut self, policy: ErrorDetailPolicy) {
+        self.error_detail_policy = policy;
+    }
+
+    pub fn add_blocking_can<T>(&mut self, name: impl Into<String>, can: T)
+    where
+        T: embedded_can::blocking::Can + Send + 'static,
+    {
+        self.blocking_can.push((name.into(), Box::new(can)));
+    }
+
+    pub fn add_nonblocking_can<T>(&mut self, name: impl Into<String>, can: T)
+    where
+        T: embedded_can::nb::Can + Send + 'static,
+    {
+        self.nonblocking_can.push((name.into(), Box::new(can)));
     }
 }
 
