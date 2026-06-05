@@ -1,0 +1,25 @@
+package wasi:gpio@0.2.0;
+
+interface digital-async {
+    use types.{error-code};
+    use wasi:io/poll@0.2.6.{pollable};
+
+    variant wait-error {
+        not-in-progress,
+        would-block,
+        other(error-code),
+    }
+
+    resource input-wait-pin {
+        start-wait-high: func() -> result<_, error-code>;
+        start-wait-low: func() -> result<_, error-code>;
+        start-wait-rising-edge: func() -> result<_, error-code>;
+        start-wait-falling-edge: func() -> result<_, error-code>;
+        start-wait-any-edge: func() -> result<_, error-code>;
+
+        subscribe: func() -> pollable;
+        finish-wait: func() -> result<_, wait-error>;
+    }
+
+    open-input-wait: func(name: string) -> result<input-wait-pin, error-code>;
+}

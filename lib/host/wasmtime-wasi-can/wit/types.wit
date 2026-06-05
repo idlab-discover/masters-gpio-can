@@ -1,4 +1,4 @@
-package wasi:can;
+package wasi:can@0.2.0;
 
 /// Shared Controller Area Network (CAN) types based on `embedded-can`.
 interface types {

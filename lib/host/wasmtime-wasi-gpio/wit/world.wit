@@ -1,0 +1,8 @@
+package wasi:gpio@0.2.0;
+
+world imports {
+    import types;
+    import digital;
+    import digital-async;
+    import pwm;
+}

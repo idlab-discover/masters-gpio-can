@@ -1,5 +1,5 @@
+use crate::can::WasiCanCtxView;
 use crate::can::bindings::wasi;
-use crate::can::{ErrorDetailPolicy, WasiCanCtxView};
 use wasi::can::types::{ErrorCode, Id};
 
 use embedded_can::{
@@ -52,6 +52,7 @@ impl Id {
 }
 
 impl wasi::can::types::Host for WasiCanCtxView<'_> {}
+
 impl wasi::can::types::HostFrame for WasiCanCtxView<'_> {
     fn is_extended(
         &mut self,
@@ -113,7 +114,7 @@ impl wasi::can::types::HostFrame for WasiCanCtxView<'_> {
     }
 }
 
-pub fn map_hal_error<E: embedded_can::Error>(err: E, policy: ErrorDetailPolicy) -> ErrorCode {
+pub fn map_hal_error<E: embedded_can::Error>(err: E, debug: bool) -> ErrorCode {
     match err.kind() {
         embedded_can::ErrorKind::Overrun => ErrorCode::Overrun,
         embedded_can::ErrorKind::Bit => ErrorCode::Bit,
@@ -121,9 +122,7 @@ pub fn map_hal_error<E: embedded_can::Error>(err: E, policy: ErrorDetailPolicy) 
         embedded_can::ErrorKind::Crc => ErrorCode::Crc,
         embedded_can::ErrorKind::Form => ErrorCode::Form,
         embedded_can::ErrorKind::Acknowledge => ErrorCode::Acknowledge,
-        _ => match policy {
-            ErrorDetailPolicy::Opaque => ErrorCode::Other("Hardware CAN error".to_string()),
-            ErrorDetailPolicy::Debug => ErrorCode::Other(format!("{err:?}")),
-        },
+        _ if debug => ErrorCode::Other(format!("{err:?}")),
+        _ => ErrorCode::Other("Hardware CAN error".to_string()),
     }
 }

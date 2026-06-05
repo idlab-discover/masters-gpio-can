@@ -1,6 +1,6 @@
+use crate::can::WasiCanCtxView;
 use crate::can::bindings::wasi;
 use crate::can::types::{Frame, map_hal_error};
-use crate::can::{ErrorDetailPolicy, WasiCanCtxView};
 use wasi::can::types::{ErrorCode, Id};
 
 use embedded_can::{Frame as HalFrame, Id as HalId, blocking::Can as HalCan};
@@ -13,8 +13,8 @@ pub struct Can {
 pub trait ErasedCan {
     fn new_frame(&mut self, id: HalId, data: &[u8]) -> Option<Frame>;
     fn new_remote_frame(&mut self, id: HalId, dlc: usize) -> Option<Frame>;
-    fn transmit(&mut self, frame: &Frame, policy: ErrorDetailPolicy) -> Result<(), ErrorCode>;
-    fn receive(&mut self, policy: ErrorDetailPolicy) -> Result<Frame, ErrorCode>;
+    fn transmit(&mut self, frame: &Frame, debug: bool) -> Result<(), ErrorCode>;
+    fn receive(&mut self, debug: bool) -> Result<Frame, ErrorCode>;
 }
 
 impl<T: HalCan> ErasedCan for T {
@@ -30,16 +30,16 @@ impl<T: HalCan> ErasedCan for T {
         Some(Frame::from_hal(&hal_frame))
     }
 
-    fn transmit(&mut self, frame: &Frame, policy: ErrorDetailPolicy) -> Result<(), ErrorCode> {
+    fn transmit(&mut self, frame: &Frame, debug: bool) -> Result<(), ErrorCode> {
         let Some(hal_frame) = Frame::to_hal(&frame) else {
             return Err(ErrorCode::Other("Should not fail".to_string()));
         };
 
-        HalCan::transmit(self, &hal_frame).map_err(|err| map_hal_error(err, policy))
+        HalCan::transmit(self, &hal_frame).map_err(|err| map_hal_error(err, debug))
     }
 
-    fn receive(&mut self, policy: ErrorDetailPolicy) -> Result<Frame, ErrorCode> {
-        let hal_frame = HalCan::receive(self).map_err(|err| map_hal_error(err, policy))?;
+    fn receive(&mut self, debug: bool) -> Result<Frame, ErrorCode> {
+        let hal_frame = HalCan::receive(self).map_err(|err| map_hal_error(err, debug))?;
 
         Ok(Frame::from_hal(&hal_frame))
     }
@@ -64,6 +64,7 @@ impl wasi::can::blocking::Host for WasiCanCtxView<'_> {
         Ok(Ok(self.table.push(Can { name, erased_can })?))
     }
 }
+
 impl wasi::can::blocking::HostCan for WasiCanCtxView<'_> {
     fn new_frame(
         &mut self,
@@ -109,20 +110,20 @@ impl wasi::can::blocking::HostCan for WasiCanCtxView<'_> {
         frame: wasmtime::component::Resource<Frame>,
     ) -> wasmtime::Result<Result<(), ErrorCode>> {
         let frame = self.table.get(&frame)?.clone();
-        let policy = self.ctx.error_detail_policy;
+        let debug = self.ctx.debug;
         let self_ = self.table.get_mut(&self_)?;
 
-        Ok(self_.erased_can.transmit(&frame, policy))
+        Ok(self_.erased_can.transmit(&frame, debug))
     }
 
     fn receive(
         &mut self,
         self_: wasmtime::component::Resource<Can>,
     ) -> wasmtime::Result<Result<wasmtime::component::Resource<Frame>, ErrorCode>> {
-        let policy = self.ctx.error_detail_policy;
+        let debug = self.ctx.debug;
         let self_ = self.table.get_mut(&self_)?;
 
-        let frame = self_.erased_can.receive(policy);
+        let frame = self_.erased_can.receive(debug);
 
         match frame {
             Ok(frame) => Ok(Ok(self.table.push(frame)?)),

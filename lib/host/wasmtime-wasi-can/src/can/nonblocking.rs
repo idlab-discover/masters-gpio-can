@@ -1,6 +1,6 @@
+use crate::can::WasiCanCtxView;
 use crate::can::bindings::wasi;
 use crate::can::types::{Frame, map_hal_error};
-use crate::can::{ErrorDetailPolicy, WasiCanCtxView};
 use wasi::can::nonblocking::{Error, ErrorCode, Id};
 
 use embedded_can::{Frame as Halframe, Id as HalId, nb::Can as HalCan};
@@ -13,12 +13,8 @@ pub struct Can {
 pub trait ErasedCan {
     fn new_frame(&mut self, id: HalId, data: &[u8]) -> Option<Frame>;
     fn new_remote_frame(&mut self, id: HalId, dlc: usize) -> Option<Frame>;
-    fn transmit(
-        &mut self,
-        frame: &Frame,
-        policy: ErrorDetailPolicy,
-    ) -> Result<Option<Frame>, Error>;
-    fn receive(&mut self, policy: ErrorDetailPolicy) -> Result<Frame, Error>;
+    fn transmit(&mut self, frame: &Frame, debug: bool) -> Result<Option<Frame>, Error>;
+    fn receive(&mut self, debug: bool) -> Result<Frame, Error>;
 }
 
 impl<T: HalCan> ErasedCan for T {
@@ -34,11 +30,7 @@ impl<T: HalCan> ErasedCan for T {
         Some(Frame::from_hal(&hal_frame))
     }
 
-    fn transmit(
-        &mut self,
-        frame: &Frame,
-        policy: ErrorDetailPolicy,
-    ) -> Result<Option<Frame>, Error> {
+    fn transmit(&mut self, frame: &Frame, debug: bool) -> Result<Option<Frame>, Error> {
         let Some(hal_frame) = Frame::to_hal(&frame) else {
             return Err(Error::Other(ErrorCode::Other(
                 "Should not fail".to_string(),
@@ -49,14 +41,14 @@ impl<T: HalCan> ErasedCan for T {
             .map(|replaced| replaced.map(|frame| Frame::from_hal(&frame)))
             .map_err(|err| match err {
                 nb::Error::WouldBlock => Error::WouldBlock,
-                nb::Error::Other(err) => Error::Other(map_hal_error(err, policy)),
+                nb::Error::Other(err) => Error::Other(map_hal_error(err, debug)),
             })
     }
 
-    fn receive(&mut self, policy: ErrorDetailPolicy) -> Result<Frame, Error> {
+    fn receive(&mut self, debug: bool) -> Result<Frame, Error> {
         let hal_frame = HalCan::receive(self).map_err(|err| match err {
             nb::Error::WouldBlock => Error::WouldBlock,
-            nb::Error::Other(err) => Error::Other(map_hal_error(err, policy)),
+            nb::Error::Other(err) => Error::Other(map_hal_error(err, debug)),
         })?;
 
         Ok(Frame::from_hal(&hal_frame))
@@ -82,6 +74,7 @@ impl wasi::can::nonblocking::Host for WasiCanCtxView<'_> {
         Ok(Ok(self.table.push(Can { name, erased_can })?))
     }
 }
+
 impl wasi::can::nonblocking::HostCan for WasiCanCtxView<'_> {
     fn new_frame(
         &mut self,
@@ -127,10 +120,10 @@ impl wasi::can::nonblocking::HostCan for WasiCanCtxView<'_> {
         frame: wasmtime::component::Resource<Frame>,
     ) -> wasmtime::Result<Result<Option<wasmtime::component::Resource<Frame>>, Error>> {
         let frame = self.table.get(&frame)?.clone();
-        let policy = self.ctx.error_detail_policy;
+        let debug = self.ctx.debug;
         let self_ = self.table.get_mut(&self_)?;
 
-        match self_.erased_can.transmit(&frame, policy) {
+        match self_.erased_can.transmit(&frame, debug) {
             Ok(Some(replaced_frame)) => Ok(Ok(Some(self.table.push(replaced_frame)?))),
             Ok(None) => Ok(Ok(None)),
             Err(err) => Ok(Err(err)),
@@ -141,10 +134,10 @@ impl wasi::can::nonblocking::HostCan for WasiCanCtxView<'_> {
         &mut self,
         self_: wasmtime::component::Resource<Can>,
     ) -> wasmtime::Result<Result<wasmtime::component::Resource<Frame>, Error>> {
-        let policy = self.ctx.error_detail_policy;
+        let debug = self.ctx.debug;
         let self_ = self.table.get_mut(&self_)?;
 
-        let frame = self_.erased_can.receive(policy);
+        let frame = self_.erased_can.receive(debug);
 
         match frame {
             Ok(frame) => Ok(Ok(self.table.push(frame)?)),

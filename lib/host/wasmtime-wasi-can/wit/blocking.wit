@@ -1,4 +1,4 @@
-package wasi:can;
+package wasi:can@0.2.0;
 
 /// Blocking CAN API based on `embedded_can::blocking::Can`.
 interface blocking {

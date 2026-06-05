@@ -1,0 +1,3 @@
+[overrides]
+"wasi:can" = { path = "lib/host/wasmtime-wasi-can/wit" }
+"wasi:gpio" = { path = "lib/host/wasmtime-wasi-gpio/wit" }

@@ -1,0 +1,23 @@
+package wasi:gpio@0.2.0;
+
+/// Shared General Purpose Input/Output (GPIO) types based on `embedded-hal`.
+interface types {
+    /// Digital GPIO error kind.
+    ///
+    /// This mirrors `embedded_hal::digital::ErrorKind`.
+    variant error-code {
+        /// A different error occurred.
+        other(string),
+    }
+
+    /// Digital output pin state.
+    ///
+    /// This mirrors `embedded_hal::digital::PinState`.
+    enum pin-state {
+        /// Low pin state.
+        low,
+
+        /// High pin state.
+        high,
+    }
+}

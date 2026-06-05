@@ -1,0 +1,152 @@
+package wasi:gpio@0.2.0;
+
+/// Shared General Purpose Input/Output (GPIO) types based on `embedded-hal`.
+interface types {
+  /// Digital GPIO error kind.
+  ///
+  /// This mirrors `embedded_hal::digital::ErrorKind`.
+  variant error-code {
+    /// A different error occurred.
+    other(string),
+  }
+
+  /// Digital output pin state.
+  ///
+  /// This mirrors `embedded_hal::digital::PinState`.
+  enum pin-state {
+    /// Low pin state.
+    low,
+    /// High pin state.
+    high,
+  }
+}
+
+interface digital-async {
+  use types.{error-code};
+  use wasi:io/poll@0.2.6.{pollable};
+
+  variant wait-error {
+    not-in-progress,
+    would-block,
+    other(error-code),
+  }
+
+  resource input-wait-pin {
+    start-wait-high: func() -> result<_, error-code>;
+    start-wait-low: func() -> result<_, error-code>;
+    start-wait-rising-edge: func() -> result<_, error-code>;
+    start-wait-falling-edge: func() -> result<_, error-code>;
+    start-wait-any-edge: func() -> result<_, error-code>;
+    subscribe: func() -> pollable;
+    finish-wait: func() -> result<_, wait-error>;
+  }
+
+  open-input-wait: func(name: string) -> result<input-wait-pin, error-code>;
+}
+
+/// Digital General Purpose Input/Output (GPIO) API based on
+/// `embedded_hal::digital`.
+interface digital {
+  use types.{error-code, pin-state};
+
+  /// A single digital push-pull output pin.
+  ///
+  /// This mirrors `embedded_hal::digital::OutputPin`.
+  resource output-pin {
+    /// Drives the pin low.
+    ///
+    /// The actual electrical state of the pin may not be low, for example
+    /// due to external electrical sources.
+    set-low: func() -> result<_, error-code>;
+    /// Drives the pin high.
+    ///
+    /// The actual electrical state of the pin may not be high, for example
+    /// due to external electrical sources.
+    set-high: func() -> result<_, error-code>;
+    /// Drives the pin high or low depending on the provided state.
+    set-state: func(state: pin-state) -> result<_, error-code>;
+  }
+
+  /// A push-pull output pin that can read its output state.
+  ///
+  /// This mirrors `embedded_hal::digital::StatefulOutputPin`. The output
+  /// methods are repeated because WIT resources do not support inheritance.
+  resource stateful-output-pin {
+    /// Drives the pin low.
+    set-low: func() -> result<_, error-code>;
+    /// Drives the pin high.
+    set-high: func() -> result<_, error-code>;
+    /// Drives the pin high or low depending on the provided state.
+    set-state: func(state: pin-state) -> result<_, error-code>;
+    /// Returns whether the pin is in drive-high mode.
+    ///
+    /// This does not read the electrical state of the pin.
+    is-set-high: func() -> result<bool, error-code>;
+    /// Returns whether the pin is in drive-low mode.
+    ///
+    /// This does not read the electrical state of the pin.
+    is-set-low: func() -> result<bool, error-code>;
+    /// Toggles the pin output.
+    toggle: func() -> result<_, error-code>;
+  }
+
+  /// A single digital input pin.
+  ///
+  /// This mirrors `embedded_hal::digital::InputPin`.
+  resource input-pin {
+    /// Returns whether the input pin is high.
+    is-high: func() -> result<bool, error-code>;
+    /// Returns whether the input pin is low.
+    is-low: func() -> result<bool, error-code>;
+  }
+
+  open-output: func(name: string) -> result<output-pin, error-code>;
+
+  open-stateful-output: func(name: string) -> result<stateful-output-pin, error-code>;
+
+  open-input: func(name: string) -> result<input-pin, error-code>;
+}
+
+/// Pulse Width Modulation (PWM) API based on `embedded_hal::pwm`.
+interface pwm {
+  use types.{error-code};
+
+  /// A single PWM channel or pin.
+  ///
+  /// This mirrors `embedded_hal::pwm::SetDutyCycle`.
+  resource pwm-pin {
+    /// Returns the maximum duty cycle value.
+    ///
+    /// This value corresponds to a 100% duty cycle.
+    max-duty-cycle: func() -> u16;
+    /// Sets the duty cycle to `duty / max-duty-cycle`.
+    ///
+    /// The caller is responsible for ensuring that `duty` is less than or
+    /// equal to the maximum duty cycle value.
+    set-duty-cycle: func(duty: u16) -> result<_, error-code>;
+    /// Sets the duty cycle to 0%, or always inactive.
+    set-duty-cycle-fully-off: func() -> result<_, error-code>;
+    /// Sets the duty cycle to 100%, or always active.
+    set-duty-cycle-fully-on: func() -> result<_, error-code>;
+    /// Sets the duty cycle to `num / denom`.
+    ///
+    /// The caller is responsible for ensuring that `num` is less than or
+    /// equal to `denom`, and that `denom` is not zero.
+    set-duty-cycle-fraction: func(num: u16, denom: u16) -> result<_, error-code>;
+    /// Sets the duty cycle to `percent / 100`.
+    ///
+    /// The caller is responsible for ensuring that `percent` is less than
+    /// or equal to 100.
+    set-duty-cycle-percent: func(percent: u8) -> result<_, error-code>;
+  }
+
+  open: func(name: string) -> result<pwm-pin, error-code>;
+}
+
+world imports {
+  import types;
+  import digital;
+  import wasi:io/poll@0.2.6;
+  import digital-async;
+  import pwm;
+}
