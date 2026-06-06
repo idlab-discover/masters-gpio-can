@@ -1,0 +1,36 @@
+[can]
+debug = false
+
+    [[can.blocking]]
+    ifname = "can0"
+    name = "can"
+
+    [[can.nonblocking]]
+    ifname = "can0"
+    name = "can"
+
+
+# [gpio]
+# debug = false
+
+#     [[gpio.output-pin]]
+#     pin-name = "GPIO2"
+#     name = "pin2"
+
+#     [[gpio.output-pin]]
+#     pin-name = "GPIO17"
+#     name = "pin17"
+
+#     [[gpio.stateful-output-pin]]
+#     pin-name = "GPIO4"
+#     name = "pin4"
+
+#     [[gpio.input-pin]]
+#     pin-name = "GPIO3"
+#     name = "pin3"
+
+#     [[gpio.pwm-pin]]
+#     chip = 0
+#     channel = 0
+#     period-ns = 20_000_000
+#     name = "pwm"
