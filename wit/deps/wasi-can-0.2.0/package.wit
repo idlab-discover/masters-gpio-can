@@ -37,24 +37,14 @@ interface types {
     other(string),
   }
 
-  /// A CAN frame.
-  ///
-  /// This mirrors `embedded_can::Frame`.
-  resource frame {
-    /// Returns true if this is an extended frame.
-    is-extended: func() -> bool;
-    /// Returns true if this is a standard frame.
-    is-standard: func() -> bool;
-    /// Returns true if this is a remote frame.
-    is-remote-frame: func() -> bool;
-    /// Returns true if this is a data frame.
-    is-data-frame: func() -> bool;
-    /// Returns the frame identifier.
-    id: func() -> id;
-    /// Returns the data length code.
-    dlc: func() -> u64;
-    /// Returns the frame data.
-    data: func() -> list<u8>;
+  variant frame-kind {
+    data(list<u8>),
+    remote(u32),
+  }
+
+  record frame {
+    id: id,
+    kind: frame-kind,
   }
 }
 
@@ -64,20 +54,10 @@ interface blocking {
 
   /// A blocking CAN interface that is able to transmit and receive frames.
   resource can {
-    /// Creates a new data frame.
-    ///
-    /// This returns `none` if the data slice is too long for the concrete
-    /// frame implementation.
-    new-frame: func(id: id, data: list<u8>) -> option<frame>;
-    /// Creates a new remote frame with the RTR bit set.
-    ///
-    /// This returns `none` if the data length code is not valid for the
-    /// concrete frame implementation.
-    new-remote-frame: func(id: id, dlc: u64) -> option<frame>;
     /// Puts a frame in the transmit buffer.
     ///
     /// Blocks until space is available in the transmit buffer.
-    transmit: func(frame: borrow<frame>) -> result<_, error-code>;
+    transmit: func(frame: frame) -> result<_, error-code>;
     /// Blocks until a frame was received.
     receive: func() -> result<frame, error-code>;
   }
@@ -101,22 +81,12 @@ interface nonblocking {
 
   /// A CAN interface that is able to transmit and receive frames.
   resource can {
-    /// Creates a new data frame.
-    ///
-    /// This returns `none` if the data slice is too long for the concrete
-    /// frame implementation.
-    new-frame: func(id: id, data: list<u8>) -> option<frame>;
-    /// Creates a new remote frame with the RTR bit set.
-    ///
-    /// This returns `none` if the data length code is not valid for the
-    /// concrete frame implementation.
-    new-remote-frame: func(id: id, dlc: u64) -> option<frame>;
     /// Puts a frame in the transmit buffer to be sent on the bus.
     ///
     /// Returns `some(frame)` if a pending lower-priority frame was
     /// replaced, `none` if no frame was replaced, or `would-block` if the
     /// transmit buffer is full and no frame can be replaced.
-    transmit: func(frame: borrow<frame>) -> result<option<frame>, error>;
+    transmit: func(frame: frame) -> result<option<frame>, error>;
     /// Returns a received frame if available.
     receive: func() -> result<frame, error>;
   }

@@ -5,7 +5,6 @@ fn main() -> Result<(), socketcan::Error> {
     let mut socket = CanSocket::open("vcan0")?;
 
     echo_loop(&mut socket)
-
 }
 
 fn echo_loop<C: Can>(can: &mut C) -> Result<(), C::Error> {

@@ -44,29 +44,13 @@ interface types {
         other(string),
     }
 
-    /// A CAN frame.
-    ///
-    /// This mirrors `embedded_can::Frame`.
-    resource frame {
-        /// Returns true if this is an extended frame.
-        is-extended: func() -> bool;
+    variant frame-kind {
+        data(list<u8>),
+        remote(u32),
+    }
 
-        /// Returns true if this is a standard frame.
-        is-standard: func() -> bool;
-
-        /// Returns true if this is a remote frame.
-        is-remote-frame: func() -> bool;
-
-        /// Returns true if this is a data frame.
-        is-data-frame: func() -> bool;
-
-        /// Returns the frame identifier.
-        id: func() -> id;
-
-        /// Returns the data length code.
-        dlc: func() -> u64;
-
-        /// Returns the frame data.
-        data: func() -> list<u8>;
+    record frame {
+        id: id,
+        kind: frame-kind,
     }
 }

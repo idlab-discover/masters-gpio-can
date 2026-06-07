@@ -6,22 +6,10 @@ interface blocking {
 
     /// A blocking CAN interface that is able to transmit and receive frames.
     resource can {
-        /// Creates a new data frame.
-        ///
-        /// This returns `none` if the data slice is too long for the concrete
-        /// frame implementation.
-        new-frame: func(id: id, data: list<u8>) -> option<frame>;
-        
-        /// Creates a new remote frame with the RTR bit set.
-        ///
-        /// This returns `none` if the data length code is not valid for the
-        /// concrete frame implementation.
-        new-remote-frame: func(id: id, dlc: u64) -> option<frame>;
-
         /// Puts a frame in the transmit buffer.
         ///
         /// Blocks until space is available in the transmit buffer.
-        transmit: func(frame: borrow<frame>) -> result<_, error-code>;
+        transmit: func(frame: frame) -> result<_, error-code>;
 
         /// Blocks until a frame was received.
         receive: func() -> result<frame, error-code>;

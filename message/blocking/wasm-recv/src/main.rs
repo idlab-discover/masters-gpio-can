@@ -16,12 +16,12 @@ fn run() -> Result<(), ErrorCode> {
     loop {
         let frame = can.receive()?;
 
-        match frame.id() {
+        match frame.id {
             Id::Standard(standard_id) => {
-                println!("standard_id={}, data={:x?}", standard_id, frame.data())
+                println!("standard_id={}, kind={:?}", standard_id, frame.kind)
             }
             Id::Extended(extended_id) => {
-                println!("extended_id={}, data={:x?}", extended_id, frame.data())
+                println!("extended_id={}, kind={:?}", extended_id, frame.kind)
             }
         }
     }

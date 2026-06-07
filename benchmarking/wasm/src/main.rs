@@ -3,9 +3,9 @@ wit_bindgen::generate!({
     generate_all
 });
 
-use wasi::can::types::{ErrorCode, Id};
-use wasi::can;
 use std::time::Instant;
+use wasi::can;
+use wasi::can::types::{ErrorCode, Frame, FrameKind, Id};
 
 const ROUNDS: usize = 1_000_000;
 
@@ -18,7 +18,11 @@ fn main() {
 fn run() -> Result<(), ErrorCode> {
     let can = can::blocking::open("vcan")?;
     let standard_id = Id::Standard(1);
-    let frame = can.new_frame(standard_id, &[0x01]).unwrap();
+    let frame_kind = FrameKind::Data(vec![0x01]);
+    let frame = Frame {
+        id: standard_id,
+        kind: frame_kind,
+    };
 
     let mut vec = Vec::new();
 
