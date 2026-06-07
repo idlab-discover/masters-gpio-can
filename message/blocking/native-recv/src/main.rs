@@ -7,10 +7,7 @@ fn main() -> Result<(), socketcan::Error> {
     recv_loop(&mut can_socket)
 }
 
-fn recv_loop<C>(can: &mut C) -> Result<(), C::Error>
-where
-    C: Can,
-{
+fn recv_loop<C: Can>(can: &mut C) -> Result<(), C::Error> {
     loop {
         let frame = can.receive()?;
 

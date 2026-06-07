@@ -5,6 +5,7 @@ REMOTE_DIR=~/can/
 
 artifacts=(
   target/aarch64-unknown-linux-gnu/release/host
+  policy.toml
 )
 
 pids=()

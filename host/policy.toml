@@ -1,13 +1,17 @@
 [can]
 debug = false
 
-    [[can.blocking]]
-    ifname = "can0"
-    name = "can"
+    # [[can.blocking]]
+    # ifname = "can0"
+    # name = "can"
 
-    [[can.nonblocking]]
-    ifname = "can0"
-    name = "can"
+    [[can.blocking]]
+    ifname = "vcan0"
+    name = "vcan"
+
+    # [[can.nonblocking]]
+    # ifname = "can0"
+    # name = "can"
 
 
 # [gpio]

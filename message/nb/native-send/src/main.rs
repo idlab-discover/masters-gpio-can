@@ -8,10 +8,7 @@ fn main() -> Result<(), socketcan::Error> {
     send_once(&mut can_socket)
 }
 
-fn send_once<C>(can: &mut C) -> Result<(), C::Error>
-where
-    C: Can,
-{
+fn send_once<C: Can>(can: &mut C) -> Result<(), C::Error> {
     let standard_id = StandardId::new(1).unwrap();
     let frame = C::Frame::new(
         standard_id,
